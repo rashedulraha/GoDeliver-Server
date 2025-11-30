@@ -80,20 +80,58 @@ async function run() {
 
     //! payment related apis
 
-    app.post("create-checkout-session", async (req, res) => {
+    app.post("/create-checkout-session", async (req, res) => {
       const paymentInfo = req.body;
+      const amount = parseInt(paymentInfo.cost) * 100;
 
-      const session = await stripe.checkout.session({
+      const session = await stripe.checkout.sessions.create({
         line_items: [
           {
             // Provide the exact Price ID (for example, price_1234) of the product you want to sell
-            price: "{{PRICE_ID}}",
+            price_data: {
+              currency: "USD",
+              unit_amount: amount,
+              product_data: {
+                name: paymentInfo.parcelName,
+              },
+            },
             quantity: 1,
           },
         ],
+        customer_email: paymentInfo.senderEmail,
         mode: "payment",
-        success_url: `${process.env.SITE_DOMAIN}?/dashboard/payment-success`,
+        metadata: {
+          parcelsId: paymentInfo.parcelsId,
+        },
+        success_url: `${process.env.SITE_DOMAIN}/dashboard/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.SITE_DOMAIN}/dashboard/payment-cancel`,
       });
+
+      console.log(session);
+      res.send({ url: session.url });
+    });
+
+    app.patch("/payment-success", async (req, res) => {
+      const sessionId = req.query.session_id;
+      // console.log(sessionId);
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+      // console.log("session retrieve", session);
+
+      if (session.payment_status === "paid") {
+        const id = session.metadata.parcelsId;
+        const query = { _id: new ObjectId(id) };
+        const update = {
+          $set: {
+            paymentStatus: "paid",
+          },
+        };
+
+        const result = await parcelsCollection.updateOne(query, update);
+        res.send(result);
+      }
+
+      res.send({ success: false });
     });
 
     // Send a ping to confirm a successful connection
