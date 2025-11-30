@@ -40,14 +40,26 @@ async function run() {
       if (email) {
         query.senderEmail = email;
       }
+      const options = { sort: { createAt: -1 } };
 
-      const cursor = parcelsCollection.find(query);
+      const cursor = parcelsCollection.find(query, options);
       const result = await cursor.toArray();
       res.json(result);
     });
     app.post("/parcels", async (req, res) => {
       const parcel = req.body;
+
+      // parcel create time
+      parcel.createAt = new Date();
+
       const result = await parcelsCollection.insertOne(parcel);
+      res.json(result);
+    });
+
+    app.delete("/parcel/:id", async (req, res) => {
+      const { id } = req.params;
+      const query = { _id: new ObjectId(id) };
+      const result = parcelsCollection.deleteOne(query);
       res.json(result);
     });
 
