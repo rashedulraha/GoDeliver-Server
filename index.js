@@ -82,6 +82,9 @@ async function run() {
 
     app.post("/create-checkout-session", async (req, res) => {
       const paymentInfo = req.body;
+
+      console.log("payment info check", paymentInfo);
+
       const amount = parseInt(paymentInfo.cost) * 100;
 
       const session = await stripe.checkout.sessions.create({
@@ -101,25 +104,25 @@ async function run() {
         customer_email: paymentInfo.senderEmail,
         mode: "payment",
         metadata: {
-          parcelsId: paymentInfo.parcelsId,
+          parcelId: paymentInfo.parcelId,
         },
         success_url: `${process.env.SITE_DOMAIN}/dashboard/payment-success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${process.env.SITE_DOMAIN}/dashboard/payment-cancel`,
       });
 
-      console.log(session);
       res.send({ url: session.url });
     });
 
     app.patch("/payment-success", async (req, res) => {
       const sessionId = req.query.session_id;
-      // console.log(sessionId);
+
       const session = await stripe.checkout.sessions.retrieve(sessionId);
 
-      // console.log("session retrieve", session);
+      console.log("session retrieve", session);
 
       if (session.payment_status === "paid") {
-        const id = session.metadata.parcelsId;
+        const id = session.metadata.parcelId;
+
         const query = { _id: new ObjectId(id) };
         const update = {
           $set: {
@@ -128,6 +131,7 @@ async function run() {
         };
 
         const result = await parcelsCollection.updateOne(query, update);
+        console.log(result);
         res.send(result);
       }
 
