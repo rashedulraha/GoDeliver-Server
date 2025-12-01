@@ -71,13 +71,14 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    // Connect the client to the server	(optional starting in v4.7)
+    // Connect the client to the server
     await client.connect();
 
     // create data base and collection
     const db = client.db("goDeliverDB");
     const parcelsCollection = db.collection("parcels");
     const paymentCollection = db.collection("paymentHistory");
+    const userCollection = db.collection("user");
 
     //! all get parcels by email
     app.get("/parcels", async (req, res) => {
@@ -229,8 +230,28 @@ async function run() {
           return res.status(403).send({ message: "Forbidden access" });
         }
       }
-      const cursor = await paymentCollection.find(query).toArray();
+      const cursor = await paymentCollection
+        .find(query)
+        .sort({ paidAt: -1 })
+        .toArray();
       res.send(cursor);
+    });
+
+    //! User related apis
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      user.role = "user";
+      user.createAt = new Date();
+      const email = user.email;
+
+      const userExist = await userCollection.findOne({ email });
+
+      if (userExist) {
+        return res.send({ message: "user Exist" });
+      }
+
+      const result = await userCollection.insertOne(user);
+      res.send(result);
     });
 
     // Send a ping to confirm a successful connection
