@@ -16,6 +16,15 @@ app.use(express.json());
 app.use(cors());
 dotenv.config();
 
+//! generate a tracking id
+function generateTrackingId() {
+  const prefix = "TRK";
+  const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  const random = Math.random().toString(36).substring(2, 10).toUpperCase();
+
+  return `${prefix}-${date}-${random}`;
+}
+
 const uri = process.env.DB_URI;
 
 //! Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -36,6 +45,7 @@ async function run() {
     // create data base and collection
     const db = client.db("goDeliverDB");
     const parcelsCollection = db.collection("parcels");
+    const paymentCollection = db.collection("paymentHistory");
 
     //! all get parcels by email
     app.get("/parcels", async (req, res) => {
@@ -105,6 +115,7 @@ async function run() {
         mode: "payment",
         metadata: {
           parcelId: paymentInfo.parcelId,
+          parcelName: paymentInfo.parcelName,
         },
         success_url: `${process.env.SITE_DOMAIN}/dashboard/payment-success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${process.env.SITE_DOMAIN}/dashboard/payment-cancel`,
@@ -127,12 +138,33 @@ async function run() {
         const update = {
           $set: {
             paymentStatus: "paid",
+            trackingId: generateTrackingId(),
           },
         };
 
         const result = await parcelsCollection.updateOne(query, update);
-        console.log(result);
-        res.send(result);
+        const paymentHistory = {
+          amount: session.amount_subtotal / 100,
+          currency: session.currency,
+          customerEmail: session.customer_email,
+          parcelId: session.metadata.parcelId,
+          parcelName: session.metadata.parcelName,
+          transactionId: session.payment_intent,
+          paymentStatus: session.payment_status,
+          paidAt: new Date(),
+        };
+
+        if (session.payment_status === "paid") {
+          const paymentResult = await paymentCollection.insertOne(
+            paymentHistory
+          );
+
+          res.send({
+            success: true,
+            modifyParcel: result,
+            paymentHistory: paymentHistory,
+          });
+        }
       }
 
       res.send({ success: false });
