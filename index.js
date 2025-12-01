@@ -3,18 +3,50 @@ import dotenv from "dotenv";
 import cors from "cors";
 import { MongoClient, ObjectId, ServerApiVersion } from "mongodb";
 import Stripe from "stripe";
+import admin from "firebase-admin";
+import fs from "fs";
+import path from "path";
 
 dotenv.config();
+
+//! Load JSON without using assert/with
+const __dirname = path.resolve();
+const serviceAccountPath = path.join(__dirname, "go-deliver-adminsd.json");
+const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, "utf8"));
 
 const stripe = new Stripe(process.env.STRIPE_SECRET);
 
 const app = express();
 const port = process.env.PORT || 5000;
 
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
+
 // ! middle ware
 app.use(express.json());
 app.use(cors());
 dotenv.config();
+
+//!  firebase accessToken verify
+const verifyFBToken = async (req, res, next) => {
+  const token = req.headers.authorization;
+
+  if (!token) {
+    return res.status(401).send({ message: "unauthorize access" });
+  }
+
+  try {
+    const idToken = token.split(" ")[1];
+    const decoded = await admin.auth().verifyIdToken(idToken);
+    console.log("decoded in the token:", decoded);
+    req.decoded_email = decoded.email;
+
+    next();
+  } catch (error) {
+    return res.status(401).send("unauthorize access");
+  }
+};
 
 //! generate a tracking id
 function generateTrackingId() {
@@ -129,7 +161,16 @@ async function run() {
 
       const session = await stripe.checkout.sessions.retrieve(sessionId);
 
-      console.log("session retrieve", session);
+      // console.log("session retrieve", session);
+
+      const transactionId = session.payment_intent;
+      const query = { transactionId: transactionId };
+
+      const paymentExist = await paymentCollection.findOne(query);
+      if (paymentExist) {
+        return res.send({ message: "Already Exist", transactionId });
+      }
+
       const parcelTrackingId = generateTrackingId();
 
       if (session.payment_status === "paid") {
@@ -153,6 +194,7 @@ async function run() {
           transactionId: session.payment_intent,
           paymentStatus: session.payment_status,
           paidAt: new Date(),
+          parcelTrackingId: parcelTrackingId,
         };
 
         if (session.payment_status === "paid") {
@@ -171,6 +213,24 @@ async function run() {
       }
 
       res.send({ success: false });
+    });
+
+    //! get all payment
+
+    app.get("/payments", verifyFBToken, async (req, res) => {
+      const { email } = req.query;
+
+      const query = {};
+      if (email) {
+        query.customerEmail = email;
+
+        //! check email address
+        if (email !== req.decoded_email) {
+          return res.status(403).send({ message: "Forbidden access" });
+        }
+      }
+      const cursor = await paymentCollection.find(query).toArray();
+      res.send(cursor);
     });
 
     // Send a ping to confirm a successful connection
