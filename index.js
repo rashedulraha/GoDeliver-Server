@@ -79,6 +79,7 @@ async function run() {
     const parcelsCollection = db.collection("parcels");
     const paymentCollection = db.collection("paymentHistory");
     const userCollection = db.collection("user");
+    const riderCollection = db.collection("rider");
 
     //! all get parcels by email
     app.get("/parcels", async (req, res) => {
@@ -252,6 +253,26 @@ async function run() {
 
       const result = await userCollection.insertOne(user);
       res.send(result);
+    });
+
+    // save rider data
+
+    app.post("/rider", async (req, res) => {
+      try {
+        const { fastName, lastName, email, phoneNumber } = req.body;
+
+        // Basic validation
+        if (!fastName || !lastName || !email || !phoneNumber) {
+          return res.status(400).json({ error: "Required fields missing" });
+        }
+
+        const riderData = req.body;
+
+        const result = await riderCollection.insertOne(riderData);
+        res.json({ success: true, insertedId: result.insertedId });
+      } catch (error) {
+        res.status(500).json({ error: "Server error", message: error.message });
+      }
     });
 
     // Send a ping to confirm a successful connection
