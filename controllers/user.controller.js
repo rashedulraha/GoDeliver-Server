@@ -1,4 +1,7 @@
+import { ObjectId } from "mongodb";
 import { connectDB } from "../db/connect.js";
+
+//  ! user create and post
 
 export const createUser = async (req, res) => {
   try {
@@ -19,6 +22,7 @@ export const createUser = async (req, res) => {
   }
 };
 
+//!  user get  data base
 export const getUser = async (req, res) => {
   try {
     const { userCollection } = await connectDB();
@@ -26,5 +30,26 @@ export const getUser = async (req, res) => {
     res.send(result);
   } catch (error) {
     res.status(401).send({ message: error.message });
+  }
+};
+
+//!   user update
+
+export const patchUser = async (req, res) => {
+  try {
+    const { userCollection } = await connectDB();
+    const { id } = req.params;
+    const roleInfo = req.body;
+    const query = { _id: new ObjectId(id) };
+    const updatedDoc = {
+      $set: {
+        role: roleInfo.role,
+      },
+    };
+
+    const result = await userCollection.updateOne(query, updatedDoc);
+    res.send(result);
+  } catch (error) {
+    res.status(401).send({ message: "update not complete" });
   }
 };
