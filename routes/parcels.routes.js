@@ -5,12 +5,13 @@ import {
   createParcel,
   deleteParcel,
 } from "../controllers/parcels.controller.js";
+import { verifyFBToken } from "../utils/verifyFBToken.js";
 
 const router = express.Router();
 
-router.get("/", getParcels);
-router.get("/:id", getParcelById);
-router.post("/", createParcel);
-router.delete("/:id", deleteParcel);
+router.get("/", verifyFBToken, getParcels);
+router.get("/:id", verifyFBToken, getParcelById);
+router.post("/", verifyFBToken, createParcel);
+router.delete("/:id", verifyFBToken, deleteParcel);
 
 export default router;

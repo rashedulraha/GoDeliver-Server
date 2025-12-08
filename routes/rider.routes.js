@@ -4,11 +4,12 @@ import {
   getRiders,
   patchRider,
 } from "../controllers/rider.controller.js";
+import { verifyFBToken } from "../utils/verifyFBToken.js";
 
 const router = express.Router();
 
-router.post("/", addRider);
-router.get("/", getRiders);
-router.patch("/:id", patchRider);
+router.post("/", verifyFBToken, addRider);
+router.get("/", verifyFBToken, getRiders);
+router.patch("/:id", verifyFBToken, patchRider);
 
 export default router;

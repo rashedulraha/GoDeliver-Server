@@ -51,6 +51,18 @@ export const patchRider = async (req, res) => {
     };
 
     const result = await riderCollection.updateOne(query, updatedDoc);
+    if (status === "approve") {
+      const { userCollection } = await connectDB();
+      const email = req.body.email;
+      const userQuery = { email };
+      const updateUser = {
+        $set: {
+          role: "rider",
+        },
+      };
+
+      const userResult = await userCollection.updateOne(userQuery, updateUser);
+    }
     res.send(result);
   } catch {
     res.status(500).json({ error: error.message });
