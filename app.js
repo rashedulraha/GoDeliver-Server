@@ -6,7 +6,6 @@ import parcelRoutes from "./routes/parcels.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import "./utils/firebase.js";
-import riders from "./controllers/riders.controller.js";
 
 dotenv.config();
 
@@ -18,7 +17,6 @@ app.use("/parcels", parcelRoutes);
 app.use("/payments", paymentRoutes);
 app.use("/users", userRoutes);
 app.use("/rider", riderRoutes);
-app.use("/riders", riders);
 
 app.get("/", (req, res) => {
   res.send("Hello World! Go deliver is running");
