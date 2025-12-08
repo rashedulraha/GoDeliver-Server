@@ -18,5 +18,6 @@ export async function connectDB() {
     paymentCollection: db.collection("paymentHistory"),
     userCollection: db.collection("user"),
     riderCollection: db.collection("rider"),
+    trackingSlidesCollection: db.collection("trackingSlides"),
   };
 }

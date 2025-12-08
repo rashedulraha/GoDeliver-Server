@@ -41,7 +41,7 @@ export const patchRider = async (req, res) => {
   try {
     const { riderCollection } = await connectDB();
     const { id } = req.params;
-    const status = req.body.status;
+    const status = req.body.riderStatus;
 
     const query = { _id: new ObjectId(id) };
     const updatedDoc = {
