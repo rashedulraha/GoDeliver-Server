@@ -59,6 +59,7 @@ export const handlePaymentSuccess = async (req, res) => {
       {
         $set: {
           paymentStatus: "paid",
+          deliveryStatus: "pending-pickup",
           trackingId: trackingId,
         },
       }

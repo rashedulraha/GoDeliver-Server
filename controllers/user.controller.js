@@ -32,7 +32,7 @@ export const getUser = async (req, res) => {
       query.name = { $regex: searchText, $options: "i" };
     }
 
-    const result = await userCollection.find(query).toArray();
+    const result = await userCollection.find(query).limit(2).toArray();
     res.send(result);
   } catch (error) {
     console.error("GetUser Error:", error.message);
