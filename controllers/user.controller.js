@@ -33,8 +33,20 @@ export const getUser = async (req, res) => {
   }
 };
 
-//!   user update
+//!  get user by email and  id
+export const getUserByEmailId = async (req, res) => {
+  try {
+    const { userCollection } = await connectDB();
+    const email = req.params.email;
+    const query = { email };
+    const user = await userCollection.findOne(query);
+    res.send({ role: user?.role || "user" });
+  } catch (error) {
+    res.status(403).send({ message: "forbidden" });
+  }
+};
 
+//!   user update
 export const patchUser = async (req, res) => {
   try {
     const { userCollection } = await connectDB();
