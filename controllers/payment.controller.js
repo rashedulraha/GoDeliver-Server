@@ -53,6 +53,7 @@ export const handlePaymentSuccess = async (req, res) => {
 
   if (session.payment_status === "paid") {
     const id = session.metadata.parcelId;
+    const createAt = new Date();
 
     await parcelsCollection.updateOne(
       { _id: new ObjectId(id) },
@@ -61,6 +62,7 @@ export const handlePaymentSuccess = async (req, res) => {
           paymentStatus: "paid",
           deliveryStatus: "pending-pickup",
           trackingId: trackingId,
+          createAt: createAt,
         },
       }
     );

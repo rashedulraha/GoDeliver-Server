@@ -40,6 +40,45 @@ export const createParcel = async (req, res) => {
   res.json(result);
 };
 
+export const updateParcel = async (req, res) => {
+  try {
+    const { parcelsCollection } = await connectDB();
+    const { riderCollection } = await connectDB();
+
+    const { riderId, riderEmail, riderName } = req.body;
+    const { id } = req.params;
+    const query = { _id: new ObjectId(id) };
+    const updatedDoc = {
+      $set: {
+        deliveryStatus: "Driver assign",
+        riderId: riderId,
+        riderName: riderName,
+        riderEmail: riderEmail,
+      },
+    };
+
+    const result = parcelsCollection.updateOne(query, updatedDoc);
+
+    // update rider info
+
+    const riderQuery = { _id: new ObjectId(riderId) };
+    const RiderUpdateDoc = {
+      $set: {
+        workStatus: "going for delivery",
+      },
+    };
+
+    const riderResult = await riderCollection.updateOne(
+      riderQuery,
+      RiderUpdateDoc
+    );
+
+    res.send(riderResult);
+  } catch (error) {
+    res.status(404).send({ message: "Network error" });
+  }
+};
+
 export const deleteParcel = async (req, res) => {
   const { parcelsCollection } = await connectDB();
 
