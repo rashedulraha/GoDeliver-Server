@@ -1,12 +1,14 @@
 import { connectDB } from "../db/connect";
 
-const adminRoleToken = async (req, res, next) => {
+export const adminRoleToken = async (req, res, next) => {
   try {
     const email = req.decoded_email;
     const query = { email };
 
     const { userCollection } = await connectDB();
-    const user = userCollection.find(query);
+    const user = await userCollection.findOne(query).toArray();
+
+    console.log(user);
 
     if (!user || user.role !== "admin") {
       return res.status(403).send({ message: "forbidden" });

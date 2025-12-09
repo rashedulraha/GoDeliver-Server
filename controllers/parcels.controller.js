@@ -4,9 +4,12 @@ import { ObjectId } from "mongodb";
 export const getParcels = async (req, res) => {
   const { parcelsCollection } = await connectDB();
   const query = {};
-  const { email } = req.query;
+  const { email, deliveryStatus } = req.query;
 
   if (email) query.senderEmail = email;
+  if (deliveryStatus) {
+    query.deliveryStatus = deliveryStatus;
+  }
 
   const result = await parcelsCollection
     .find(query, { sort: { createAt: -1 } })
@@ -16,13 +19,15 @@ export const getParcels = async (req, res) => {
 };
 
 export const getParcelById = async (req, res) => {
-  const { parcelsCollection } = await connectDB();
-
-  const result = await parcelsCollection.findOne({
-    _id: new ObjectId(req.params.id),
-  });
-
-  res.send(result);
+  try {
+    const { parcelsCollection } = await connectDB();
+    const { id } = req.params;
+    const query = { _id: new ObjectId(id) };
+    const result = await parcelsCollection.findOne(query);
+    res.send(result);
+  } catch (error) {
+    res.status(404).send({ message: "Network error" });
+  }
 };
 
 export const createParcel = async (req, res) => {
@@ -33,6 +38,45 @@ export const createParcel = async (req, res) => {
 
   const result = await parcelsCollection.insertOne(parcel);
   res.json(result);
+};
+
+export const updateParcel = async (req, res) => {
+  try {
+    const { parcelsCollection } = await connectDB();
+    const { riderCollection } = await connectDB();
+
+    const { riderId, riderEmail, riderName } = req.body;
+    const { id } = req.params;
+    const query = { _id: new ObjectId(id) };
+    const updatedDoc = {
+      $set: {
+        deliveryStatus: "Driver assign",
+        riderId: riderId,
+        riderName: riderName,
+        riderEmail: riderEmail,
+      },
+    };
+
+    const result = parcelsCollection.updateOne(query, updatedDoc);
+
+    // update rider info
+
+    const riderQuery = { _id: new ObjectId(riderId) };
+    const RiderUpdateDoc = {
+      $set: {
+        workStatus: "going for delivery",
+      },
+    };
+
+    const riderResult = await riderCollection.updateOne(
+      riderQuery,
+      RiderUpdateDoc
+    );
+
+    res.send(riderResult);
+  } catch (error) {
+    res.status(404).send({ message: "Network error" });
+  }
 };
 
 export const deleteParcel = async (req, res) => {

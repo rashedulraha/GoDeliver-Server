@@ -8,8 +8,6 @@ export const createUser = async (req, res) => {
     const { userCollection } = await connectDB();
 
     const user = req.body;
-    user.role = "user";
-    user.createAt = new Date();
 
     const exist = await userCollection.findOne({ email: user.email });
 
@@ -26,15 +24,38 @@ export const createUser = async (req, res) => {
 export const getUser = async (req, res) => {
   try {
     const { userCollection } = await connectDB();
-    const result = await userCollection.find().toArray();
+
+    const searchText = req.query.searchText;
+    const query = {};
+
+    if (searchText) {
+      query.name = { $regex: searchText, $options: "i" };
+    }
+
+    const result = await userCollection.find(query).limit(2).toArray();
     res.send(result);
   } catch (error) {
-    res.status(401).send({ message: error.message });
+    console.error("GetUser Error:", error.message);
+    res
+      .status(500)
+      .send({ message: "Internal Server Error", error: error.message });
   }
 };
 
-//!   user update
+//!  get user by email and  id
+export const getUserByEmailId = async (req, res) => {
+  try {
+    const { userCollection } = await connectDB();
+    const email = req.params.email;
+    const query = { email };
+    const user = await userCollection.findOne(query);
+    res.send({ role: user?.role || "user" });
+  } catch (error) {
+    res.status(403).send({ message: "forbidden" });
+  }
+};
 
+//!  user update
 export const patchUser = async (req, res) => {
   try {
     const { userCollection } = await connectDB();

@@ -22,12 +22,28 @@ export const addRider = async (req, res) => {
   }
 };
 
-//! get rider
+//! const get user  to database
 export const getRiders = async (req, res) => {
   try {
     const { riderCollection } = await connectDB();
+    const { status, district, workStatus } = req.query;
+    const query = {};
 
-    const result = await riderCollection.find().sort({ _id: -1 }).toArray();
+    if (status) {
+      query.status = status;
+    }
+
+    if (district) {
+      query.district = district;
+    }
+    if (workStatus) {
+      query.workStatus = workStatus;
+    }
+
+    const result = await riderCollection
+      .find(query)
+      .sort({ _id: -1 })
+      .toArray();
 
     res.send(result);
   } catch (error) {
@@ -36,7 +52,6 @@ export const getRiders = async (req, res) => {
 };
 
 // !patch rider
-
 export const patchRider = async (req, res) => {
   try {
     const { riderCollection } = await connectDB();
@@ -47,6 +62,7 @@ export const patchRider = async (req, res) => {
     const updatedDoc = {
       $set: {
         status: status,
+        workStatus: "Available",
       },
     };
 

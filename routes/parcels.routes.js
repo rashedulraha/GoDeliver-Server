@@ -4,6 +4,7 @@ import {
   getParcelById,
   createParcel,
   deleteParcel,
+  updateParcel,
 } from "../controllers/parcels.controller.js";
 import { verifyFBToken } from "../utils/verifyFBToken.js";
 
@@ -12,6 +13,7 @@ const router = express.Router();
 router.get("/", verifyFBToken, getParcels);
 router.get("/:id", verifyFBToken, getParcelById);
 router.post("/", verifyFBToken, createParcel);
+router.patch("/:id", verifyFBToken, updateParcel);
 router.delete("/:id", verifyFBToken, deleteParcel);
 
 export default router;
